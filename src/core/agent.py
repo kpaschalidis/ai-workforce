@@ -3,9 +3,9 @@ from langgraph.graph import StateGraph, END
 from langchain_core.language_models import BaseChatModel
 from langchain_openai import ChatOpenAI
 
-from core.state import AgentState
-from core.skill import BaseSkill
-from core.logger import AgentLogger
+from .state import AgentState
+from .skill import BaseSkill
+from .logger import AgentLogger
 
 
 class GenericAIAgent:
@@ -58,16 +58,16 @@ class GenericAIAgent:
         workflow = StateGraph(AgentState)
 
         workflow.add_node("agent", self._agent_executor)
-
-        if self.tools:
-            workflow.add_node("tools", self._tool_executor)
-            workflow.add_edge("agent", self._route)
-            workflow.add_edge("tools", "agent")
-        else:
-            workflow.add_edge("agent", "__end__")
-            workflow.add_edge("__end__", END)
+        workflow.add_node("tools", self._tool_executor)
+        workflow.add_edge("tools", "agent")
+        workflow.add_conditional_edges(
+            "agent",
+            lambda state: self._route(state),
+            {"tools": "tools", "__end__": END},
+        )
 
         workflow.set_entry_point("agent")
+
         return workflow.compile()
 
     def _agent_executor(self, state: AgentState) -> Dict[str, Any]:

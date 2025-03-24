@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import List, Dict, Any, Optional
 from langchain_core.tools import BaseTool
-from core.logger import get_logger
+from .logger import get_logger
 
 
 class BaseSkill(ABC):
