@@ -6,12 +6,12 @@ from datetime import datetime
 
 class AgentState(BaseModel):
     """
-    Comprehensive state management for generic AI agents.
+    State management for AI agents.
     """
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
-    # Unique identifiers
+    # Identifiers
     session_id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     trace_id: Optional[str] = None
 
@@ -19,19 +19,18 @@ class AgentState(BaseModel):
     messages: List[Dict[str, Any]] = Field(default_factory=list)
     context: Dict[str, Any] = Field(default_factory=dict)
 
-    # Reasoning and execution tracking
+    # Execution tracking
     scratchpad: List[Dict[str, Any]] = Field(default_factory=list)
     tool_executions: List[Dict[str, Any]] = Field(default_factory=list)
 
-    # Skill and tool management
+    # Domain-specific management
     current_skill: Optional[str] = None
     available_skills: List[str] = Field(default_factory=list)
+    actions: List[Dict[str, Any]] = Field(default_factory=list)
 
-    # Performance and metrics
+    # Performance and error tracking
     metrics: Dict[str, Any] = Field(default_factory=dict)
     execution_times: List[Dict[str, Any]] = Field(default_factory=list)
-
-    # Error tracking
     errors: List[Dict[str, Any]] = Field(default_factory=list)
 
     # Timestamp management
@@ -52,6 +51,26 @@ class AgentState(BaseModel):
         self.messages.append(message)
         self.updated_at = datetime.now()
 
+    def add_user_message(self, content: str):
+        """Add a user message."""
+        self.add_message("user", content)
+
+    def add_assistant_message(self, content: str):
+        """Add an assistant message."""
+        self.add_message("assistant", content)
+
+    def add_system_message(self, content: str):
+        """Add a system message."""
+        self.add_message("system", content)
+
+    def add_to_scratchpad(self, content: Dict[str, Any]):
+        """Add content to the scratchpad."""
+        self.scratchpad.append(content)
+
+    def clear_scratchpad(self):
+        """Clear the scratchpad."""
+        self.scratchpad = []
+
     def record_tool_execution(
         self,
         tool_name: str,
@@ -70,6 +89,23 @@ class AgentState(BaseModel):
         self.tool_executions.append(execution_record)
         self.updated_at = datetime.now()
 
+    def add_action(
+        self,
+        action_type: str,
+        description: str,
+        details: Optional[Dict[str, Any]] = None,
+    ):
+        """Add an action with optional details."""
+        self.actions.append(
+            {
+                "type": action_type,
+                "description": description,
+                "details": details or {},
+                "timestamp": datetime.now(),
+            }
+        )
+        self.updated_at = datetime.now()
+
     def add_error(self, error_type: str, details: Dict[str, Any]):
         """Add an error to the state's error log."""
         error_record = {
@@ -85,11 +121,25 @@ class AgentState(BaseModel):
         self.metrics[metric_name] = value
         self.updated_at = datetime.now()
 
-    def get_context(self, key: str, default: Any = None) -> Any:
+    def get_last_user_message(self) -> Optional[str]:
+        """Get the last user message from the conversation."""
+        for message in reversed(self.messages):
+            if message.get("role") == "user":
+                return message.get("content")
+        return None
+
+    def get_last_assistant_message(self) -> Optional[str]:
+        """Get the last assistant message from the conversation."""
+        for message in reversed(self.messages):
+            if message.get("role") == "assistant":
+                return message.get("content")
+        return None
+
+    def get_context_value(self, key: str, default: Any = None) -> Any:
         """Safely retrieve context value."""
         return self.context.get(key, default)
 
-    def set_context(self, key: str, value: Any):
+    def update_context_value(self, key: str, value: Any):
         """Set a context value."""
         self.context[key] = value
         self.updated_at = datetime.now()
