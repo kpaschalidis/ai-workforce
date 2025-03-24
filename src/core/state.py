@@ -1,7 +1,9 @@
 import uuid
-from typing import Dict, List, Any, Optional
-from pydantic import BaseModel, Field, ConfigDict
 from datetime import datetime
+from pathlib import Path
+from typing import Any, Dict, List, Optional
+
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class AgentState(BaseModel):
@@ -143,3 +145,12 @@ class AgentState(BaseModel):
         """Set a context value."""
         self.context[key] = value
         self.updated_at = datetime.now()
+
+    def save_to_file(self, path: str):
+        """Save the current state to a JSON file."""
+        Path(path).write_text(self.model_dump_json(indent=2))
+
+    @classmethod
+    def load_from_file(cls, path: str) -> "AgentState":
+        """Load agent state from a JSON file."""
+        return cls.model_validate_json(Path(path).read_text())
