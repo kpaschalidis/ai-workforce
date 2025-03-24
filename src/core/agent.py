@@ -1,4 +1,4 @@
-from typing import List, Dict, Any, Optional, Callable
+from typing import List, Dict, Any, Literal, Optional, Callable
 from langgraph.graph import StateGraph, END
 from langchain_core.language_models import BaseChatModel
 from langchain_openai import ChatOpenAI
