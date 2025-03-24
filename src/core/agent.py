@@ -57,14 +57,15 @@ class GenericAIAgent:
         """
         workflow = StateGraph(AgentState)
 
-        # Add core nodes
         workflow.add_node("agent", self._agent_executor)
-        workflow.add_node("tools", self._tool_executor)
 
-        # Define routing
-        workflow.add_edge("agent", self._route)
-        workflow.add_edge("tools", "agent")
-        workflow.add_edge("__end__", END)
+        if self.tools:
+            workflow.add_node("tools", self._tool_executor)
+            workflow.add_edge("agent", self._route)
+            workflow.add_edge("tools", "agent")
+        else:
+            workflow.add_edge("agent", "__end__")
+            workflow.add_edge("__end__", END)
 
         workflow.set_entry_point("agent")
         return workflow.compile()
