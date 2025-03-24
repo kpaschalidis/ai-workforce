@@ -1,8 +1,9 @@
 import uuid
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Union
 
+from langchain_core.messages import AIMessage, HumanMessage, SystemMessage, ToolMessage
 from pydantic import BaseModel, ConfigDict, Field
 
 
@@ -18,7 +19,9 @@ class AgentState(BaseModel):
     trace_id: Optional[str] = None
 
     # Conversation context
-    messages: List[Dict[str, Any]] = Field(default_factory=list)
+    messages: List[
+        Union[Dict[str, Any], AIMessage, HumanMessage, SystemMessage, ToolMessage]
+    ] = Field(default_factory=list)
     context: Dict[str, Any] = Field(default_factory=dict)
 
     # Execution tracking
@@ -43,27 +46,49 @@ class AgentState(BaseModel):
         self, role: str, content: str, metadata: Optional[Dict[str, Any]] = None
     ):
         """Add a message to the conversation with optional metadata."""
-        message = {
-            "role": role,
-            "content": content,
-            "timestamp": datetime.now(),
-        }
-        if metadata:
-            message.update(metadata)
-        self.messages.append(message)
+        if role == "user":
+            self.add_user_message(content)
+        elif role == "assistant":
+            self.add_assistant_message(content)
+        elif role == "system":
+            self.add_system_message(content)
+        else:
+            # For other roles, use the dictionary approach
+            message = {
+                "role": role,
+                "content": content,
+                "timestamp": datetime.now(),
+            }
+            if metadata:
+                message.update(metadata)
+            self.messages.append(message)
+
         self.updated_at = datetime.now()
 
     def add_user_message(self, content: str):
         """Add a user message."""
-        self.add_message("user", content)
+        self.messages.append(HumanMessage(content=content))
+        self.updated_at = datetime.now()
 
     def add_assistant_message(self, content: str):
         """Add an assistant message."""
-        self.add_message("assistant", content)
+        self.messages.append(AIMessage(content=content))
+        self.updated_at = datetime.now()
 
     def add_system_message(self, content: str):
         """Add a system message."""
-        self.add_message("system", content)
+        self.messages.append(SystemMessage(content=content))
+        self.updated_at = datetime.now()
+
+    def add_tool_message(self, tool_name: str, content: str):
+        """Add a proper tool message to the conversation."""
+        tool_message = ToolMessage(
+            content=content,
+            tool_call_id=str(uuid.uuid4()),  # Generate a unique ID
+            name=tool_name,  # Note: ToolMessage uses 'name' not 'tool_name'
+        )
+        self.messages.append(tool_message)
+        self.updated_at = datetime.now()
 
     def add_to_scratchpad(self, content: Dict[str, Any]):
         """Add content to the scratchpad."""
@@ -126,14 +151,18 @@ class AgentState(BaseModel):
     def get_last_user_message(self) -> Optional[str]:
         """Get the last user message from the conversation."""
         for message in reversed(self.messages):
-            if message.get("role") == "user":
+            if isinstance(message, HumanMessage):
+                return message.content
+            elif isinstance(message, dict) and message.get("role") == "user":
                 return message.get("content")
         return None
 
     def get_last_assistant_message(self) -> Optional[str]:
         """Get the last assistant message from the conversation."""
         for message in reversed(self.messages):
-            if message.get("role") == "assistant":
+            if isinstance(message, AIMessage):
+                return message.content
+            elif isinstance(message, dict) and message.get("role") == "assistant":
                 return message.get("content")
         return None
 
