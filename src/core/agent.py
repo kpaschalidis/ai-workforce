@@ -95,27 +95,14 @@ class GenericAIAgent:
             raise
 
     def _tool_executor(self, state: AgentState) -> Dict[str, Any]:
-        """
-        Execute selected tools.
+        """Default tool execution does nothing unless overridden."""
+        self.logger.log_agent_event(
+            "tool_executor_skipped", {"reason": "No tools defined"}
+        )
+        return state.model_dump()
 
-        Args:
-            state: Current agent state
-
-        Returns:
-            Updated agent state
-        """
-        # Tool execution logic
-        pass
-
-    def _route(self, state: AgentState) -> str:
-        """
-        Route between agent and tool nodes.
-
-        Args:
-            state: Current agent state
-
-        Returns:
-            Next node in the workflow
-        """
-        # Routing logic
-        pass
+    def _route(self, state: AgentState) -> Literal["agent", "tools", "__end__"]:
+        """Default routing based on whether tools are defined."""
+        if self.tools:
+            return "tools"
+        return "__end__"
