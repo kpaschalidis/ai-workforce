@@ -93,23 +93,11 @@ class AgentLogger:
 
         def wrapper(*args, **kwargs):
             logger = get_logger(func.__module__)
-
-            # Log the start of the function
             logger.debug(f"Starting {func.__name__}")
-
-            # Record the start time
             start_time = datetime.now()
-
-            # Execute the function
             result = func(*args, **kwargs)
-
-            # Record the end time
             end_time = datetime.now()
-
-            # Calculate the duration
             duration = end_time - start_time
-
-            # Log the end of the function
             logger.debug(f"Finished {func.__name__} in {duration.total_seconds():.2f}s")
 
             return result
@@ -122,22 +110,11 @@ class AgentLogger:
         async def wrapper(*args, **kwargs):
             logger = get_logger(func.__module__)
 
-            # Log the start of the function
             logger.debug(f"Starting {func.__name__}")
-
-            # Record the start time
             start_time = datetime.now()
-
-            # Execute the function
             result = await func(*args, **kwargs)
-
-            # Record the end time
             end_time = datetime.now()
-
-            # Calculate the duration
             duration = end_time - start_time
-
-            # Log the end of the function
             logger.debug(f"Finished {func.__name__} in {duration.total_seconds():.2f}s")
 
             return result
