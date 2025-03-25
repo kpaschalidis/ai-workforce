@@ -87,6 +87,11 @@ class GenericAIAgent:
             # Update state
             state.add_message("assistant", response.content)
 
+            for skill in self.skills:
+                suggested_action = skill.suggest_action(state)
+                if suggested_action:
+                    state.add_action(**suggested_action)
+
             return state.model_dump()
         except Exception as e:
             self.logger.log_agent_event(

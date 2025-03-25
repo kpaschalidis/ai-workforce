@@ -1,6 +1,8 @@
 from abc import ABC, abstractmethod
 from typing import List, Dict, Any, Optional
 from langchain_core.tools import BaseTool
+
+from .state import AgentState
 from .logger import get_logger
 
 
@@ -53,6 +55,15 @@ class BaseSkill(ABC):
         """
         # Default implementation, can be overridden
         return True
+
+    def suggest_action(self, state: AgentState) -> Optional[Dict[str, Any]]:
+        """
+        Optionally suggest an action based on the agent state.
+
+        Returns:
+            Dictionary with keys: type, description (tool name), and optional details (tool inputs).
+        """
+        return None
 
     def handle_error(self, error: Exception, context: Optional[Dict[str, Any]] = None):
         """
