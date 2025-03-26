@@ -10,7 +10,7 @@ class EchoAgent(GenericAIAgent):
             return state.model_dump()
 
         last_input = state.get_last_user_message()
-        result = tool.invoke({"input_text": last_input})
+        result = tool.ainvoke({"input_text": last_input})
 
         state.record_tool_execution(tool.name, {"input_text": last_input}, result)
         state.add_tool_message(tool.name, result)

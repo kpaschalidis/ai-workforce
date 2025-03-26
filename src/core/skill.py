@@ -1,6 +1,8 @@
 from abc import ABC, abstractmethod
 from typing import List, Dict, Any, Optional
 from langchain_core.tools import BaseTool
+
+from src.core.state import AgentState
 from .logger import get_logger
 
 
@@ -39,6 +41,15 @@ class BaseSkill(ABC):
             config: Configuration dictionary for the skill
         """
         pass
+
+    def recommend_tool(self, state: AgentState) -> Optional[Dict[str, Any]]:
+        """
+        Optionally suggest an action based on the agent state.
+
+        Returns:
+            Dictionary with keys: type, description (tool name), and optional details (tool inputs).
+        """
+        return None
 
     def validate_input(self, tool_name: str, inputs: Dict[str, Any]) -> bool:
         """

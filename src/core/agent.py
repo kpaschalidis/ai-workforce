@@ -2,10 +2,12 @@ from typing import List, Dict, Any, Literal, Optional, Callable
 from langgraph.graph import StateGraph, END
 from langchain_core.language_models import BaseChatModel
 from langchain_openai import ChatOpenAI
+import asyncio
 
 from .state import AgentState
 from .skill import BaseSkill
 from .logger import AgentLogger
+from .tool import EnhancedTool
 
 
 class GenericAIAgent:
@@ -35,18 +37,28 @@ class GenericAIAgent:
         self.logger = logger or AgentLogger()
         self.config = config or {}
 
-        # Initialize skills
         for skill in self.skills:
             skill.initialize(self.config)
 
-    def _collect_tools(self) -> List[Any]:
+    def _collect_tools(self) -> List[EnhancedTool]:
         """
         Collect tools from all skills.
 
         Returns:
             List of tools from all skills
         """
-        return [tool for skill in self.skills for tool in skill.get_tools()]
+        tools = []
+        for skill in self.skills:
+            for tool in skill.get_tools():
+                # Attach extra metadata
+                tool.metadata = {
+                    "skill": skill.name,
+                    "input_schema": getattr(tool, "args_schema", None),
+                    "examples": getattr(tool, "examples", []),
+                    "category": getattr(tool, "category", "general"),
+                }
+                tools.append(tool)
+        return tools
 
     def create_workflow(self) -> Callable:
         """
@@ -70,9 +82,9 @@ class GenericAIAgent:
 
         return workflow.compile()
 
-    def _agent_executor(self, state: AgentState) -> Dict[str, Any]:
+    async def _agent_executor(self, state: AgentState) -> Dict[str, Any]:
         """
-        Execute agent reasoning.
+        Async execution of agent reasoning.
 
         Args:
             state: Current agent state
@@ -81,12 +93,8 @@ class GenericAIAgent:
             Updated agent state
         """
         try:
-            # LLM reasoning logic
-            response = self.llm.invoke(state.messages)
-
-            # Update state
+            response = await self.llm.ainvoke(state.messages)
             state.add_message("assistant", response.content)
-
             return state.model_dump()
         except Exception as e:
             self.logger.log_agent_event(
@@ -94,15 +102,44 @@ class GenericAIAgent:
             )
             raise
 
-    def _tool_executor(self, state: AgentState) -> Dict[str, Any]:
-        """Default tool execution does nothing unless overridden."""
-        self.logger.log_agent_event(
-            "tool_executor_skipped", {"reason": "No tools defined"}
-        )
-        return state.model_dump()
+    async def _tool_executor(self, state: AgentState) -> Dict[str, Any]:
+        """Async tool execution with basic tool selection logic."""
+        try:
+            user_input = state.get_last_user_message()
+            if not user_input:
+                return state.model_dump()
+
+            for skill in self.skills:
+                recommendation = skill.recommend_tool(state)
+                if recommendation:
+                    tool_name, tool_inputs = recommendation
+                    matching_tool = next(
+                        (t for t in self.tools if t.name == tool_name), None
+                    )
+                    if matching_tool:
+                        result = await asyncio.to_thread(
+                            matching_tool.run, **tool_inputs
+                        )
+                        state.add_tool_message(tool_name, str(result))
+                        state.record_tool_execution(tool_name, tool_inputs, result)
+                        return state.model_dump()
+
+            self.logger.log_agent_event(
+                "tool_not_found",
+                {"reason": "No recommended tool matched"},
+                level="WARNING",
+            )
+            return state.model_dump()
+
+        except Exception as e:
+            self.logger.log_agent_event(
+                "tool_execution_error", {"error": str(e)}, level="ERROR"
+            )
+            raise
 
     def _route(self, state: AgentState) -> Literal["agent", "tools", "__end__"]:
-        """Default routing based on whether tools are defined."""
-        if self.tools:
-            return "tools"
+        """Routing based on tool recommendation presence."""
+        for skill in self.skills:
+            if skill.recommend_tool(state):
+                return "tools"
         return "__end__"
