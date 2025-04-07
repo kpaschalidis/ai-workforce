@@ -12,8 +12,8 @@ from langchain_core.language_models import BaseChatModel
 from src.core.infrastructure.events import EventBus
 from src.core.intelligence.skill import BaseSkill
 
-from .agent import GenericAgent
-from .config import AgentConfig, AgentConfigFactory
+from ..core.agent.agent import GenericAgent
+from ..core.agent.config import AgentConfig, AgentConfigFactory
 
 
 class AgentFactory:

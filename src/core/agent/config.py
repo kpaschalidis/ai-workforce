@@ -1,21 +1,220 @@
-"""
-Agent configuration factory for the AI framework.
+from typing import Dict, Any, Optional, Type, Union, List
 
-This module provides utilities for creating and managing agent configurations,
-making it easy to create agents with specific behaviors.
-"""
-
-from typing import Dict, Any, Optional, Type, Union
 
 from ..execution.config import PatternType
 
 
+class PersonaConfig:
+    """
+    Configuration for an agent's persona characteristics.
+
+    This class encapsulates personality traits, communication style, and expertise
+    levels that define how an agent presents itself during interactions.
+    """
+
+    def __init__(
+        self,
+        traits: Optional[Dict[str, float]] = None,
+        communication_style: Optional[str] = None,
+        expertise_areas: Optional[Dict[str, float]] = None,
+        voice: Optional[str] = None,
+        tone: Optional[str] = None,
+        quirks: Optional[List[str]] = None,
+        **kwargs,
+    ):
+        """
+        Initialize persona configuration.
+
+        Args:
+            traits: Dictionary of personality traits with values (0.0-1.0)
+            communication_style: Communication style descriptor
+            expertise_areas: Dictionary of knowledge areas with expertise levels (0.0-1.0)
+            voice: Voice characteristic descriptor
+            tone: Overall tone descriptor
+            quirks: List of personality quirks or mannerisms
+            **kwargs: Additional persona parameters
+        """
+        self.traits = traits or {}
+        self.communication_style = communication_style or "neutral"
+        self.expertise_areas = expertise_areas or {}
+        self.voice = voice or "neutral"
+        self.tone = tone or "professional"
+        self.quirks = quirks or []
+        self.extra_config = kwargs
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert persona configuration to dictionary."""
+        config = {
+            "traits": self.traits,
+            "communication_style": self.communication_style,
+            "expertise_areas": self.expertise_areas,
+            "voice": self.voice,
+            "tone": self.tone,
+            "quirks": self.quirks,
+        }
+
+        # Add any extra configuration parameters
+        config.update(self.extra_config)
+
+        return config
+
+    @classmethod
+    def from_dict(cls, config_dict: Dict[str, Any]) -> "PersonaConfig":
+        """
+        Create persona configuration from dictionary.
+
+        Args:
+            config_dict: Configuration dictionary
+
+        Returns:
+            PersonaConfig instance
+        """
+        # Extract known parameters
+        traits = config_dict.get("traits", {})
+        communication_style = config_dict.get("communication_style")
+        expertise_areas = config_dict.get("expertise_areas", {})
+        voice = config_dict.get("voice")
+        tone = config_dict.get("tone")
+        quirks = config_dict.get("quirks", [])
+
+        # Create config, filtering out known keys
+        known_keys = {
+            "traits",
+            "communication_style",
+            "expertise_areas",
+            "voice",
+            "tone",
+            "quirks",
+        }
+        extra_config = {k: v for k, v in config_dict.items() if k not in known_keys}
+
+        return cls(
+            traits=traits,
+            communication_style=communication_style,
+            expertise_areas=expertise_areas,
+            voice=voice,
+            tone=tone,
+            quirks=quirks,
+            **extra_config,
+        )
+
+
+class RoleConfig:
+    """
+    Configuration for an agent's role characteristics.
+
+    This class encapsulates role-specific information such as goals, constraints,
+    responsibilities, and background information.
+    """
+
+    def __init__(
+        self,
+        role: str = "Assistant",
+        goals: Optional[List[str]] = None,
+        constraints: Optional[List[str]] = None,
+        responsibilities: Optional[List[str]] = None,
+        backstory: Optional[str] = None,
+        tools_required: Optional[List[str]] = None,
+        skills_required: Optional[List[str]] = None,
+        performance_evaluators: Optional[List[str]] = None,
+        **kwargs,
+    ):
+        """
+        Initialize role configuration.
+
+        Args:
+            role: Role title or name
+            goals: List of goals or objectives for this role
+            constraints: List of constraints or limitations
+            responsibilities: List of key responsibilities
+            backstory: Background narrative for the role
+            tools_required: List of tools this role requires
+            skills_required: List of skills this role requires
+            performance_evaluators: List of criteria to evaluate role performance
+            **kwargs: Additional role parameters
+        """
+        self.role = role
+        self.goals = goals or []
+        self.constraints = constraints or []
+        self.responsibilities = responsibilities or []
+        self.backstory = backstory or ""
+        self.tools_required = tools_required or []
+        self.skills_required = skills_required or []
+        self.performance_evaluators = performance_evaluators or []
+        self.extra_config = kwargs
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert role configuration to dictionary."""
+        config = {
+            "role": self.role,
+            "goals": self.goals,
+            "constraints": self.constraints,
+            "responsibilities": self.responsibilities,
+            "backstory": self.backstory,
+            "tools_required": self.tools_required,
+            "skills_required": self.skills_required,
+            "performance_evaluators": self.performance_evaluators,
+        }
+
+        # Add any extra configuration parameters
+        config.update(self.extra_config)
+
+        return config
+
+    @classmethod
+    def from_dict(cls, config_dict: Dict[str, Any]) -> "RoleConfig":
+        """
+        Create role configuration from dictionary.
+
+        Args:
+            config_dict: Configuration dictionary
+
+        Returns:
+            RoleConfig instance
+        """
+        # Extract known parameters
+        role = config_dict.get("role", "Assistant")
+        goals = config_dict.get("goals", [])
+        constraints = config_dict.get("constraints", [])
+        responsibilities = config_dict.get("responsibilities", [])
+        backstory = config_dict.get("backstory", "")
+        tools_required = config_dict.get("tools_required", [])
+        skills_required = config_dict.get("skills_required", [])
+        performance_evaluators = config_dict.get("performance_evaluators", [])
+
+        # Create config, filtering out known keys
+        known_keys = {
+            "role",
+            "goals",
+            "constraints",
+            "responsibilities",
+            "backstory",
+            "tools_required",
+            "skills_required",
+            "performance_evaluators",
+        }
+        extra_config = {k: v for k, v in config_dict.items() if k not in known_keys}
+
+        return cls(
+            role=role,
+            goals=goals,
+            constraints=constraints,
+            responsibilities=responsibilities,
+            backstory=backstory,
+            tools_required=tools_required,
+            skills_required=skills_required,
+            performance_evaluators=performance_evaluators,
+            **extra_config,
+        )
+
+
 class AgentConfig:
     """
-    Configuration class for agent settings.
+    Configuration class for agent settings with enhanced role support.
 
     This class encapsulates all configuration parameters for agents and provides
-    methods for setting and retrieving configuration values.
+    methods for setting and retrieving configuration values, with added support
+    for roles, personas, and enhanced prompt management.
     """
 
     def __init__(
@@ -24,7 +223,8 @@ class AgentConfig:
         description: str = "a helpful AI assistant",
         agent_id: Optional[str] = None,
         system_prompt: Optional[str] = None,
-        llm_config: Optional[Dict[str, Any]] = None,
+        role_config: Optional[Union[Dict[str, Any], RoleConfig]] = None,
+        persona_config: Optional[Union[Dict[str, Any], PersonaConfig]] = None,
         pattern_type: Optional[Union[str, PatternType]] = PatternType.REACT,
         pattern_config: Optional[Dict[str, Any]] = None,
         state_type: Optional[Type] = "AgentState",
@@ -38,9 +238,9 @@ class AgentConfig:
             description: Agent description
             agent_id: Optional agent ID
             system_prompt: Custom system prompt
+            role_config: Role configuration
+            persona_config: Persona configuration
             pattern_type: Type of reasoning pattern to use
-            llm_config: Language model configuration
-            pattern_type: Type of reasoning pattern to use (if pattern not provided)
             pattern_config: Pattern-specific configuration
             state_type: Type of state to use in the workflow
             **kwargs: Additional configuration parameters
@@ -48,7 +248,26 @@ class AgentConfig:
         self.agent_id = agent_id
         self.name = name
         self.description = description
-        self.system_prompt = system_prompt or f"You are {name}, {description}."
+
+        # Initialize role config
+        if isinstance(role_config, dict):
+            self.role_config = RoleConfig.from_dict(role_config)
+        elif isinstance(role_config, RoleConfig):
+            self.role_config = role_config
+        else:
+            self.role_config = RoleConfig(role=name)
+
+        # Initialize persona config
+        if isinstance(persona_config, dict):
+            self.persona_config = PersonaConfig.from_dict(persona_config)
+        elif isinstance(persona_config, PersonaConfig):
+            self.persona_config = persona_config
+        else:
+            self.persona_config = PersonaConfig()
+
+        # Set system prompt or leave it for generation at runtime
+        self.system_prompt = system_prompt
+
         self.state_type = state_type
 
         if pattern_type is not None:
@@ -60,10 +279,6 @@ class AgentConfig:
             self.pattern_type = PatternType.REACT.value
 
         self.pattern_config = pattern_config or {}
-
-        self.llm_config = {"model": "gpt-4-turbo", "temperature": 0.7}
-        if llm_config:
-            self.llm_config.update(llm_config)
 
         self.extra_config = kwargs
 
@@ -78,7 +293,8 @@ class AgentConfig:
             "name": self.name,
             "description": self.description,
             "system_prompt": self.system_prompt,
-            "llm": self.llm_config,
+            "role_config": self.role_config.to_dict(),
+            "persona_config": self.persona_config.to_dict(),
             "pattern_type": self.pattern_type,
             "pattern_config": self.pattern_config,
         }
@@ -104,8 +320,16 @@ class AgentConfig:
         """
         if key in {"name", "description", "system_prompt", "pattern_type", "agent_id"}:
             setattr(self, key, value)
-        elif key == "llm_config":
-            self.llm_config.update(value if isinstance(value, dict) else {})
+        elif key == "role_config":
+            if isinstance(value, dict):
+                self.role_config = RoleConfig.from_dict(value)
+            elif isinstance(value, RoleConfig):
+                self.role_config = value
+        elif key == "persona_config":
+            if isinstance(value, dict):
+                self.persona_config = PersonaConfig.from_dict(value)
+            elif isinstance(value, PersonaConfig):
+                self.persona_config = value
         elif key == "pattern_config":
             self.pattern_config.update(value if isinstance(value, dict) else {})
         else:
@@ -126,8 +350,10 @@ class AgentConfig:
         """
         if key in {"name", "description", "system_prompt", "pattern_type", "agent_id"}:
             return getattr(self, key)
-        elif key == "llm_config":
-            return self.llm_config
+        elif key == "role_config":
+            return self.role_config
+        elif key == "persona_config":
+            return self.persona_config
         elif key == "pattern_config":
             return self.pattern_config
         else:
@@ -149,9 +375,12 @@ class AgentConfig:
         description = config_dict.get("description", "a helpful AI assistant")
         system_prompt = config_dict.get("system_prompt")
         pattern_type = config_dict.get("pattern_type", PatternType.REACT)
-        llm_config = config_dict.get("llm")
         pattern_config = config_dict.get("pattern_config")
         agent_id = config_dict.get("agent_id")
+
+        # Extract role and persona configs
+        role_config = config_dict.get("role_config")
+        persona_config = config_dict.get("persona_config")
 
         # Create config, filtering out known keys
         known_keys = {
@@ -162,6 +391,8 @@ class AgentConfig:
             "llm",
             "pattern_config",
             "agent_id",
+            "role_config",
+            "persona_config",
         }
         extra_config = {k: v for k, v in config_dict.items() if k not in known_keys}
 
@@ -169,190 +400,10 @@ class AgentConfig:
             name=name,
             description=description,
             system_prompt=system_prompt,
-            llm_config=llm_config,
+            role_config=role_config,
+            persona_config=persona_config,
             pattern_type=pattern_type,
             pattern_config=pattern_config,
             agent_id=agent_id,
             **extra_config,
-        )
-
-
-class AgentConfigFactory:
-    """
-    Factory for creating agent configurations.
-
-    This class provides methods for creating predefined configurations for different types of
-    agents with specific pattern types and skills.
-    """
-
-    @staticmethod
-    def create_conversational_config(
-        name: str = "Conversational Assistant",
-        description: str = "a helpful AI assistant focused on providing clear, concise, and accurate information",
-        temperature: float = 0.7,
-        max_iterations: int = 5,
-        **kwargs,
-    ) -> AgentConfig:
-        """
-        Create configuration for a conversational agent using ReAct pattern.
-
-        Args:
-            name: Agent name
-            description: Agent description
-            temperature: LLM temperature (creativity vs determinism)
-            max_iterations: Maximum ReAct iterations
-            **kwargs: Additional configuration parameters
-
-        Returns:
-            Conversational agent configuration
-        """
-        return AgentConfig(
-            name=name,
-            description=description,
-            pattern_type=PatternType.REACT,
-            llm_config={"temperature": temperature},
-            pattern_config={
-                "max_iterations": max_iterations,
-                "stop_on_error": False,
-            },
-            **kwargs,
-        )
-
-    @staticmethod
-    def create_planning_config(
-        name: str = "Planning Assistant",
-        description: str = "an AI assistant that creates and executes detailed plans to solve complex tasks",
-        temperature: float = 0.5,
-        max_iterations: int = 15,
-        max_plan_steps: int = 5,
-        **kwargs,
-    ) -> AgentConfig:
-        """
-        Create configuration for a planning agent.
-
-        Args:
-            name: Agent name
-            description: Agent description
-            temperature: LLM temperature (lower for more consistent plans)
-            max_iterations: Maximum planning iterations
-            max_plan_steps: Maximum number of steps in the plan
-            **kwargs: Additional configuration parameters
-
-        Returns:
-            Planning agent configuration
-        """
-        return AgentConfig(
-            name=name,
-            description=description,
-            pattern_type=PatternType.PLANNING,
-            llm_config={"temperature": temperature},
-            pattern_config={
-                "max_iterations": max_iterations,
-                "max_plan_steps": max_plan_steps,
-                "stop_on_error": False,
-            },
-            **kwargs,
-        )
-
-    @staticmethod
-    def create_sequential_config(
-        name: str = "Sequential Assistant",
-        description: str = "an AI assistant that processes tasks in a linear, predictable sequence",
-        temperature: float = 0.6,
-        always_use_tools: bool = False,
-        **kwargs,
-    ) -> AgentConfig:
-        """
-        Create configuration for a sequential agent.
-
-        Args:
-            name: Agent name
-            description: Agent description
-            temperature: LLM temperature
-            always_use_tools: Whether to always try to use tools
-            **kwargs: Additional configuration parameters
-
-        Returns:
-            Sequential agent configuration
-        """
-        return AgentConfig(
-            name=name,
-            description=description,
-            pattern_type=PatternType.SEQUENTIAL,
-            llm_config={"temperature": temperature},
-            pattern_config={
-                "always_use_tools": always_use_tools,
-                "stop_on_error": False,
-            },
-            **kwargs,
-        )
-
-    @staticmethod
-    def create_research_config(
-        name: str = "Research Assistant",
-        description: str = "an AI assistant specialized in thorough research and information gathering",
-        temperature: float = 0.3,
-        max_iterations: int = 10,
-        max_plan_steps: int = 7,
-        **kwargs,
-    ) -> AgentConfig:
-        """
-        Create configuration for a research-oriented agent.
-
-        Args:
-            name: Agent name
-            description: Agent description
-            temperature: LLM temperature (low for factual focus)
-            max_iterations: Maximum iterations
-            max_plan_steps: Maximum plan steps for research
-            **kwargs: Additional configuration parameters
-
-        Returns:
-            Research agent configuration
-        """
-        return AgentConfig(
-            name=name,
-            description=description,
-            pattern_type=PatternType.PLANNING,  # Research benefits from planning
-            llm_config={"temperature": temperature},
-            pattern_config={
-                "max_iterations": max_iterations,
-                "max_plan_steps": max_plan_steps,
-                "stop_on_error": False,
-            },
-            **kwargs,
-        )
-
-    @staticmethod
-    def create_coding_config(
-        name: str = "Coding Assistant",
-        description: str = "an AI assistant specialized in software development and code generation",
-        temperature: float = 0.2,
-        **kwargs,
-    ) -> AgentConfig:
-        """
-        Create configuration for a coding-focused agent.
-
-        Args:
-            name: Agent name
-            description: Agent description
-            temperature: LLM temperature (low for precise code)
-            **kwargs: Additional configuration parameters
-
-        Returns:
-            Coding agent configuration
-        """
-        return AgentConfig(
-            name=name,
-            description=description,
-            pattern_type=PatternType.REACT,  # ReAct works well for coding
-            llm_config={
-                "temperature": temperature,
-                "model": "gpt-4-turbo",  # Ensure latest model for coding
-            },
-            pattern_config={
-                "max_iterations": 7,
-                "stop_on_error": True,  # Stop on errors for coding tasks
-            },
-            **kwargs,
         )

@@ -12,6 +12,7 @@ import uuid
 from langchain_core.language_models import BaseChatModel
 from langchain_openai import ChatOpenAI
 
+from src.core.agent.prompt import PromptManager
 from src.core.infrastructure.logging import AgentLogger, get_logger
 
 from .config import AgentConfig
@@ -125,42 +126,7 @@ class BaseAgent(ABC):
         Returns:
             System prompt
         """
-        base_prompt = self.config.get(
-            "system_prompt", f"You are {self.name}, {self.description}."
-        )
-
-        if self.tools:
-            tool_descriptions = "\n".join(
-                [f"- {tool.name}: {tool.description}" for tool in self.tools]
-            )
-
-            base_prompt += (
-                f"\n\nYou have access to the following tools:\n{tool_descriptions}\n"
-            )
-
-            # Add tool usage instructions
-            base_prompt += """
-To use a tool, respond in the following format:
-
-Tool: <tool_name>
-Parameters: {
-    "param1": "value1",
-    "param2": "value2"
-}
-
-The output of the tool will be provided to you for further processing.
-"""
-
-        # Add skill-specific prompts
-        for skill in self.skills:
-            if hasattr(skill, "get_system_prompt") and callable(
-                skill.get_system_prompt
-            ):
-                skill_prompt = skill.get_system_prompt()
-                if skill_prompt:
-                    base_prompt += f"\n\n{skill_prompt}"
-
-        return base_prompt
+        return PromptManager.create_system_message(self.config, self.tools, self.skills)
 
     @abstractmethod
     def run(self, input_text: str, **kwargs) -> str:

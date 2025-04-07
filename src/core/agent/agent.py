@@ -100,7 +100,10 @@ class GenericAgent(BaseAgent):
 
             if not state.has_system_message():
                 system_prompt = self.get_system_prompt()
+                print("\n\n>> system_prompt", system_prompt)
+                print(">> before system message added...")
                 state.add_system_message(system_prompt)
+                print(">> system message added...")
 
             state.add_user_message(input_text)
 
